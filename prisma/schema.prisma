@@ -1,0 +1,26 @@
+
+
+datasource db {
+  provider = "sqlite" // หรือ postgresql ตามที่เพื่อนใช้
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ... ส่วนของ model User และ Task ด้านล่างห้ามลบ ...
+model User {
+  id    String @id @default(cuid())
+  name  String
+  email String @unique
+  tasks Task[]
+}
+
+model Task {
+  id     String @id @default(cuid())
+  day    Int
+  level  Int
+  color  String
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
