@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
+    "@radix-ui/react-slot": "^1.2.4",
     "cross-env": "^10.1.0",
     "framer-motion": "^12.34.2",
     "next": "16.1.6",

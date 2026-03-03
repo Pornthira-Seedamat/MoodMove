@@ -6,7 +6,9 @@ interface MoodCardProps {
   onClick: () => void;
 }
 
-export function MoodCard({ emoji, isActive, onClick }: MoodCardProps) {
+// src/component/ui/Moodcard.tsx
+
+export default function MoodCard({ emoji, isActive, onClick }: any) {
   return (
     <button
       onClick={onClick}
@@ -16,4 +18,5 @@ export function MoodCard({ emoji, isActive, onClick }: MoodCardProps) {
     >
       {emoji}
     </button>
-  );
+  ); // <--- วงเล็บปิดของ return
+} // <--- ** ต้องมีปีกกาอันนี้เพื่อปิดฟังก์ชัน MoodCard **
