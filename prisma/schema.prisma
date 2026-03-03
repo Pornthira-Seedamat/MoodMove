@@ -1,26 +1,42 @@
-
-
-datasource db {
-  provider = "sqlite" // หรือ postgresql ตามที่เพื่อนใช้
-}
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// ... ส่วนของ model User และ Task ด้านล่างห้ามลบ ...
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
 model User {
-  id    String @id @default(cuid())
-  name  String
-  email String @unique
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
   tasks Task[]
+  // เพิ่มความสัมพันธ์กับประวัติอารมณ์
+  statusHistory StatusHistory[]
 }
 
 model Task {
-  id     String @id @default(cuid())
-  day    Int
-  level  Int
-  color  String
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  id        Int      @id @default(autoincrement())
+  title     String
+  level     Int      // เก็บระดับอารมณ์ 1-5
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// --- เพิ่มตาราง StatusHistory ที่นี่ ---
+model StatusHistory {
+  id             Int      @id @default(autoincrement())
+  createdAt      DateTime @default(now())
+  day            Int      // เก็บวันที่ (เช่น 1-31)
+  moodKey        String   // angry, happy, etc.
+  moodLevel      Int      // 1-5
+  // เก็บสถานะท่าที่ทำเสร็จในรูปแบบ JSON (array of boolean)
+  stepsCompleted Json
+  
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
 }

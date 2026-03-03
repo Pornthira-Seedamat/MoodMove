@@ -15,6 +15,27 @@ export default function StatusPage() {
     setStats(savedStats);
   }, []);
 
+  // --- ฟังก์ชันที่เพิ่มเข้าไปเพื่อใช้บันทึก Step ---
+  const toggleStep = (itemId: number, stepIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // ป้องกันไม่ให้การกดติ๊กถูกไปสั่งปิด/เปิดแถบขยาย
+    
+    const updatedStats = stats.map(item => {
+      if (item.id === itemId) {
+        // สร้าง array stepsCompleted ถ้ายังไม่มี
+        const currentSteps = item.stepsCompleted || {};
+        const newSteps = {
+          ...currentSteps,
+          [stepIndex]: !currentSteps[stepIndex]
+        };
+        return { ...item, stepsCompleted: newSteps };
+      }
+      return item;
+    });
+
+    setStats(updatedStats);
+    localStorage.setItem('mood_stats', JSON.stringify(updatedStats));
+  };
+
   const moodDetails: Record<string, any> = {
     angry: { icon: '😡', bg: 'bg-[#C34A4A]', label: 'โกรธ', bgIcon: '💢' },
     tired: { icon: '😔', bg: 'bg-[#5B7EE3]', label: 'เศร้า', bgIcon: '🌧️' },
@@ -23,7 +44,6 @@ export default function StatusPage() {
     star: { icon: '🤩', bg: 'bg-[#FF8C00]', label: 'สุดยอด', bgIcon: '🔥' },
   };
 
-  // ฟังก์ชันดึงรายละเอียดท่าออกกำลังกายตามอารมณ์ (ให้ตรงกับ Logic หน้าเล่น)
   const getExerciseByMood = (moodKey: string) => {
     const sets: Record<string, { title: string; detail: string }[]> = {
       angry: [
@@ -78,10 +98,10 @@ export default function StatusPage() {
             <span className="opacity-100 font-bold">Home</span>
           </div>
           <div onClick={() => router.push('/history')} className="relative group cursor-pointer text-white">
-            <span className="opacity-100 font-bold">ประวัติ</span>
+            <span className="opacity-100 font-bold">สถิติ</span>
           </div>
           <div className="relative group cursor-pointer text-white">
-            <span className="font-bold opacity-100">สถิติ</span>
+            <span className="font-bold opacity-100">ประวัติ</span>
             <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-white"></div>
           </div>
           <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-xl text-blue-500 cursor-pointer">👤</div>
@@ -113,6 +133,8 @@ export default function StatusPage() {
               const isExpanded = expandedId === item.id;
               const currentExercises = getExerciseByMood(moodKey);
 
+              const isAllCompleted = currentExercises.every((_, idx) => item.stepsCompleted?.[idx] === true);
+
               return (
                 <div key={item.id} className="relative flex items-center gap-4">
                   <div 
@@ -140,28 +162,32 @@ export default function StatusPage() {
                                   <p className="text-lg uppercase opacity-100">{ex.title}</p>
                                   <p className="text-sm ml-4 opacity-100">{ex.detail}</p>
                                 </div>
-                                {/* วงกลม Checkbox สำหรับโหมดกางออก */}
-                                <div className="w-6 h-6 border-2 border-black rounded-full flex items-center justify-center bg-white shrink-0">
-                                  {item.stepsCompleted?.[idx] && <span className="text-black font-bold">✓</span>}
+                                {/* ปรับส่วน Checkbox ให้กดบันทึกได้ */}
+                                <div 
+                                  onClick={(e) => toggleStep(item.id, idx, e)}
+                                  className="w-8 h-8 border-2 border-black rounded-full flex items-center justify-center bg-white shrink-0 hover:bg-gray-100 transition-colors"
+                                >
+                                  {item.stepsCompleted?.[idx] && <span className="text-black font-bold text-xl">✓</span>}
                                 </div>
                               </div>
                             ))}
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); router.push('/'); }}
-                              className="bg-white text-black px-4 py-1 font-bold mt-2 shadow-sm border border-black hover:bg-gray-100 transition"
-                            >
-                              ดำเนินการต่อ
-                            </button>
+                            
+                            {!isAllCompleted && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); router.push('/'); }}
+                                className="bg-white text-black px-4 py-1 font-bold mt-2 shadow-sm border border-black hover:bg-gray-100 transition"
+                              >
+                                ดำเนินการต่อ
+                              </button>
+                            )}
                           </motion.div>
                         ) : (
                           <div className="flex flex-col gap-2 items-center">
-                            {/* แสดง Step จริงๆ ตามจำนวนท่าของอารมณ์นั้น (ไม่ fix แค่ 3 ท่า) */}
                             {currentExercises.map((ex, idx) => (
                               <div key={idx} className="flex items-center gap-4 w-full justify-center">
                                 <span className="text-black font-bold text-lg opacity-100">
-                                  {ex.title.split(":")[0].trim().toLowerCase()} {/* แสดงเป็น step 1, step 2 */}
+                                  {ex.title.split(":")[0].trim().toLowerCase()}
                                 </span>
-                                {/* วงกลม Checkbox: จะขึ้น ✓ เฉพาะท่าที่ทำเสร็จแล้วในข้อมูล item.stepsCompleted */}
                                 <div className="w-6 h-6 border-2 border-black rounded-full flex items-center justify-center bg-white text-black font-bold">
                                   {item.stepsCompleted?.[idx] && '✓'}
                                 </div>

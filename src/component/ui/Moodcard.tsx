@@ -17,4 +17,3 @@ export function MoodCard({ emoji, isActive, onClick }: MoodCardProps) {
       {emoji}
     </button>
   );
-}
