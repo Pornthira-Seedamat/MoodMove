@@ -1,9 +1,12 @@
-import { defineConfig } from '@prisma/config'
+import { PrismaClient } from "@prisma/client";
 
-export default defineConfig({
-  schema: 'prisma/schema.prisma',
-  // เพิ่มส่วนนี้เข้าไปเพื่อให้ Prisma รู้จัก URL
-  datasource: {
-    url: process.env.DATABASE_URL,
+// ใช้เทคนิคเดิมคือครอบด้วย Backticks เพื่อยืนยันว่าเป็น string แน่นอน
+const dbUrl = `${process.env.DATABASE_URL}`;
+
+export const prismaConfig = new PrismaClient({
+  datasources: {
+    db: {
+      url: dbUrl,
+    },
   },
-})
+});
