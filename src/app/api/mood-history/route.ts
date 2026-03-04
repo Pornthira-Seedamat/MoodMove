@@ -58,13 +58,20 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+    if (!id) {
+      return NextResponse.json({ error: "ไม่พบ ID ที่ต้องการลบ" }, { status: 400 });
+    }
 
     await prisma.statusHistory.delete({
-      where: { id: Number(id) }
+      where: { 
+        id: String(id) // แก้จาก Number(id) เป็น String(id) เพื่อให้ตรงกับ Type ใน Database
+      }
     });
+
     return NextResponse.json({ message: "ลบสำเร็จ" });
   } catch (error) {
+    console.error("Delete error:", error);
     return NextResponse.json({ error: "ลบล้มเหลว" }, { status: 500 });
   }
 }
