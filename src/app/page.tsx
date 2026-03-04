@@ -90,7 +90,6 @@ export default function MoodMove() {
     return String(email).toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
   };
 
-  // --- ส่วนที่เพิ่มการเชื่อมต่อ API ---
   const handleSignUp = async () => {
     if (!userData.username || !userData.email || !userData.password) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -102,7 +101,6 @@ export default function MoodMove() {
     }
 
     try {
-      // ส่งข้อมูลไปที่ API Route ที่เราสร้างไว้
       const response = await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,7 +114,6 @@ export default function MoodMove() {
       const data = await response.json();
 
       if (response.ok) {
-        // บันทึกข้อมูลลง LocalStorage เพื่อให้ระบบเดิมทำงานต่อได้
         localStorage.setItem('moodmove_user', JSON.stringify(data.user));
         localStorage.setItem('isLoggedIn', 'true');
         setUserData(data.user);
@@ -131,7 +128,23 @@ export default function MoodMove() {
       alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
     }
   };
-  // ------------------------------
+
+  // --- ฟังก์ชันบันทึกอารมณ์ลงฐานข้อมูล ---
+  const handleConfirmMood = async () => {
+    setIsConfirmed(true);
+    try {
+      await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mood: mood,
+          userId: userData.id
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save mood history:", error);
+    }
+  };
 
   const handleLogin = () => {
     const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
@@ -257,7 +270,6 @@ export default function MoodMove() {
       <AnimatePresence mode="wait">
         {!isLoggedIn ? (
           <motion.div key={isSignUpPage ? "signup" : "login"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-white p-4">
-              {/* Login Background Icons */}
               <div className="absolute top-40 left-[15%] text-6xl pointer-events-none">😁</div>
               <div className="absolute top-[45%] left-[10%] text-8xl pointer-events-none">🤩</div>
               <div className="absolute bottom-[10%] right-[15%] text-9xl pointer-events-none">😊</div>
@@ -296,7 +308,6 @@ export default function MoodMove() {
           </motion.div>
         ) : (
           <motion.div key="main-content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full flex flex-col items-center">
-            {/* Navbar */}
             <nav className="w-full p-6 flex justify-between items-center max-w-6xl z-30">
               <h1 className={`text-3xl font-bold ${isWhiteMode ? 'text-black' : 'text-white'}`}>MoodMove</h1>
               <div className={`flex items-center gap-6 ${isWhiteMode ? 'text-black' : 'text-white'}`}>
@@ -327,7 +338,6 @@ export default function MoodMove() {
               </div>
             </nav>
 
-            {/* Back Button */}
             <AnimatePresence>
               {isConfirmed && step < 5 && (
                 <motion.button 
@@ -371,17 +381,15 @@ export default function MoodMove() {
                         </button>
                       ))}
                     </div>
-                    <button onClick={() => setIsConfirmed(true)} className="mt-12 bg-white text-black text-2xl font-bold px-20 py-4 shadow-lg active:scale-95 border border-gray-200">ยืนยัน</button>
+                    <button onClick={handleConfirmMood} className="mt-12 bg-white text-black text-2xl font-bold px-20 py-4 shadow-lg active:scale-95 border border-gray-200">ยืนยัน</button>
                   </motion.div>
                 ) : (
                   <motion.div key={`${step}-${currentExIndex}`} initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="relative px-4 w-full flex justify-center">
-                    {/* Shadow Layer */}
                     <div className="absolute inset-0 bg-white/40 translate-x-3 translate-y-3 -rotate-2 rounded-sm -z-10 max-w-xl mx-auto"></div>
                     
                     <div className="bg-white p-10 md:p-14 shadow-2xl rounded-sm max-w-xl w-full relative min-h-[450px] flex flex-col">
                       <div className="text-black flex-1 flex flex-col relative">
                         
-                        {/* Step 4: Workout Screen */}
                         {step === 4 && (
                           <div className="flex-1 flex flex-col">
                             <div className="absolute -top-16 -left-10 bg-[#FDF5E6] p-4 shadow-md border border-gray-200 rotate-[-2deg]">
@@ -411,7 +419,6 @@ export default function MoodMove() {
                           </div>
                         )}
 
-                        {/* Step 5: Finished */}
                         {step === 5 && (
                           <div className="flex-1 flex flex-col justify-center items-center text-center">
                             <div className="text-6xl mb-6">🎉</div>
@@ -423,7 +430,6 @@ export default function MoodMove() {
                           </div>
                         )}
 
-                        {/* Step 1-3: Intro & Preparation */}
                         {step < 4 && (
                           <div className="flex-1 flex flex-col justify-center items-center text-center">
                              {step === 1 && (

@@ -2,14 +2,21 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/component/lib/prisma';
 
 // --- 1. ส่วนดึงข้อมูล (GET) ---
-export async function GET() {
+// ดึงข้อมูลประวัติการบันทึกอารมณ์
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    // ถ้ามีการส่ง userId มา ให้ดึงเฉพาะของคนนั้น ถ้าไม่ส่งมาให้ดึงทั้งหมด (เพื่อความยืดหยุ่น)
     const history = await prisma.statusHistory.findMany({
+      where: userId ? { userId: String(userId) } : {},
       orderBy: {
-        id: 'desc' // ดึงข้อมูลล่าสุดขึ้นก่อน
+        createdAt: 'desc' // แนะนำให้ใช้ createdAt ถ้ามีใน Schema เพื่อความแม่นยำของเวลา
       },
       take: 31 
     });
+    
     return NextResponse.json(history);
   } catch (error) {
     console.error("Fetch error:", error);
@@ -23,18 +30,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { userId, moodKey, moodLevel, stepsCompleted } = body;
 
+    // ตรวจสอบ userId เพราะเป็นหัวใจหลักในการเชื่อมตาราง
     if (!userId) {
-      return NextResponse.json({ error: "ไม่พบข้อมูลผู้ใช้งาน" }, { status: 400 });
+      return NextResponse.json({ error: "ไม่พบข้อมูลผู้ใช้งาน (userId is required)" }, { status: 400 });
     }
 
-    // แก้ไขจุดนี้: ใช้ String(userId) เพื่อให้ตรงกับ User.id (cuid) ใน Schema
     const history = await prisma.statusHistory.create({
       data: {
         userId: String(userId), 
         moodKey: moodKey || 'happy',
-        moodLevel: Number(moodLevel) || 0,
-        stepsCompleted: stepsCompleted || {},
-        day: new Date().getDate(), 
+        moodLevel: Number(moodLevel) || 3, // ค่าเริ่มต้นเป็น 3 (ปกติ)
+        stepsCompleted: stepsCompleted || {}, // เก็บเป็น Json 
+        day: new Date().getDate(), // เก็บวันที่ 1-31
       },
     });
 
@@ -43,11 +50,11 @@ export async function POST(request: Request) {
       id: history.id 
     }, { status: 201 });
 
-  } catch (error) {
-    console.error("History error:", error);
+  } catch (error: any) {
+    console.error("History error details:", error);
     return NextResponse.json({ 
       error: "ไม่สามารถบันทึกประวัติได้", 
-      details: error instanceof Error ? error.message : "Unknown error" 
+      details: error.message || "Unknown error" 
     }, { status: 500 });
   }
 }
