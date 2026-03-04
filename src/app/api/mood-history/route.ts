@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/component/lib/prisma';
 
-// --- 1. ส่วนดึงข้อมูล (GET) เพื่อให้หน้าประวัติและสถิติมีข้อมูลล่าสุดแสดง ---
+// --- 1. ส่วนดึงข้อมูล (GET) ---
 export async function GET() {
   try {
     const history = await prisma.statusHistory.findMany({
       orderBy: {
-        id: 'desc' // ดึง ID ล่าสุดขึ้นก่อนเสมอ แก้ปัญหาประวัติไม่อัปเดตอันล่าสุด
+        id: 'desc' // ดึงข้อมูลล่าสุดขึ้นก่อน
       },
-      take: 31 // ดึงมาเผื่อสำหรับข้อมูลทั้งเดือน
+      take: 31 
     });
     return NextResponse.json(history);
   } catch (error) {
@@ -27,14 +27,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "ไม่พบข้อมูลผู้ใช้งาน" }, { status: 400 });
     }
 
-    // แก้ไขจุดนี้: เปลี่ยนจาก String เป็น Number เพื่อให้ Build ผ่านตาม Schema
+    // แก้ไขจุดนี้: ใช้ String(userId) เพื่อให้ตรงกับ User.id (cuid) ใน Schema
     const history = await prisma.statusHistory.create({
       data: {
-        userId: Number(userId), 
+        userId: String(userId), 
         moodKey: moodKey || 'happy',
         moodLevel: Number(moodLevel) || 0,
         stepsCompleted: stepsCompleted || {},
-        // บันทึกเลขวันที่ปัจจุบัน
         day: new Date().getDate(), 
       },
     });
