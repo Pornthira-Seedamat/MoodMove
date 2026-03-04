@@ -11,11 +11,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "ข้อมูลไม่ครบถ้วน" }, { status: 400 });
     }
 
+    // สร้าง User โดยใช้ฟิลด์ที่ตรงกับ schema.prisma
     const user = await prisma.user.create({
       data: {
-        email,
-        username,
-        password,
+        email: email,
+        username: username,
+        password: password,
       },
     });
 
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("Database error:", error);
+    // ตรวจสอบ Error Code ของ Prisma (P2002 คือ Unique constraint failed)
     if (error.code === 'P2002') {
       return NextResponse.json({ error: "อีเมลนี้ถูกใช้งานแล้ว" }, { status: 400 });
     }
