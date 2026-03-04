@@ -72,7 +72,6 @@ export default function MoodMove() {
   const [seconds, setSeconds] = useState(0);
   const [preSeconds, setPreSeconds] = useState(10);
   const [isActive, setIsActive] = useState(false);
-  const [disabledMoods, setDisabledMoods] = useState<string[]>([]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const preTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,6 +89,7 @@ export default function MoodMove() {
     return String(email).toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
   };
 
+  // แก้ไข handleSignUp ให้รองรับข้อมูลจาก Prisma อย่างถูกต้อง
   const handleSignUp = async () => {
     if (!userData.username || !userData.email || !userData.password) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -114,12 +114,14 @@ export default function MoodMove() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('moodmove_user', JSON.stringify(data.user));
+        // สำคัญ: เก็บข้อมูล ID ที่ได้จาก Prisma ลงใน LocalStorage ด้วย
+        const userToSave = { ...data.user, password: userData.password };
+        localStorage.setItem('moodmove_user', JSON.stringify(userToSave));
         localStorage.setItem('isLoggedIn', 'true');
-        setUserData(data.user);
+        setUserData(userToSave);
         setIsLoggedIn(true);
         setIsSignUpPage(false);
-        alert('สมัครสมาชิกสำเร็จและบันทึกลงฐานข้อมูลแล้ว!');
+        alert('สมัครสมาชิกสำเร็จ!');
       } else {
         alert(data.error || 'เกิดข้อผิดพลาดในการสมัครสมาชิก');
       }
@@ -129,23 +131,7 @@ export default function MoodMove() {
     }
   };
 
-  // --- ฟังก์ชันบันทึกอารมณ์ลงฐานข้อมูล ---
-  const handleConfirmMood = async () => {
-    setIsConfirmed(true);
-    try {
-      await fetch('/api/history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mood: mood,
-          userId: userData.id
-        }),
-      });
-    } catch (error) {
-      console.error("Failed to save mood history:", error);
-    }
-  };
-
+  // แก้ไข handleLogin ให้ตรวจสอบข้อมูลเบื้องต้น
   const handleLogin = () => {
     const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
     if (loginInput.email === savedUser.email && loginInput.password === savedUser.password && savedUser.email) {
@@ -156,6 +142,27 @@ export default function MoodMove() {
       setIsWhiteMode(true);
     } else {
       setLoginError(true);
+    }
+  };
+
+  // บันทึกอารมณ์ลง Prisma (History Model)
+  const handleConfirmMood = async () => {
+    setIsConfirmed(true);
+    if (!userData.id) {
+        console.error("No User ID found for Prisma");
+        return;
+    }
+    try {
+      await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mood: mood,
+          userId: userData.id // ส่ง ID ไปเพื่อสร้าง Relation ใน Prisma
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save mood history to Prisma:", error);
     }
   };
 
