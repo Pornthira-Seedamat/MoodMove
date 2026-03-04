@@ -10,22 +10,27 @@ export default function StatusPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
-  // --- ส่วนที่แก้ไข: ดึงข้อมูลจาก API และเรียงลำดับล่าสุด ---
+  // --- ส่วนที่แก้ไข: ดึงข้อมูลจาก API ให้ตรงกับไฟล์ route.ts ---
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // 1. ดึงข้อมูลจาก API (สมมติว่ามี endpoint นี้)
-        const response = await fetch('/api/mood-history');
+        // ดึง userId จาก localStorage
+        const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
+        const userId = savedUser.id;
+
+        if (!userId) return; // ถ้าไม่มี user id ไม่ต้องดึง
+
+        // เปลี่ยนจาก /api/mood-history เป็น /api/history ให้ตรงกับไฟล์ที่มีอยู่
+        const response = await fetch(`/api/history?userId=${userId}`);
+        
         if (response.ok) {
           const data = await response.json();
-          // เรียงลำดับจาก ID มากไปน้อย (ล่าสุดอยู่บน) หรือใช้ createdAt
+          // เรียงลำดับจาก ID มากไปน้อย (ล่าสุดอยู่บน)
           const sortedData = data.sort((a: any, b: any) => b.id - a.id);
           setStats(sortedData);
         } else {
-          // 2. ถ้า API ล้มเหลว ให้ใช้ localStorage เป็น fallback
           const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
-          const sortedLocal = savedStats.sort((a: any, b: any) => b.id - a.id);
-          setStats(sortedLocal);
+          setStats(savedStats.sort((a: any, b: any) => b.id - a.id));
         }
       } catch (error) {
         const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
@@ -36,7 +41,7 @@ export default function StatusPage() {
     fetchStats();
   }, []);
 
-  // --- ฟังก์ชันบันทึก Step (เพิ่มการส่งไปที่ API ด้วย) ---
+  // --- ฟังก์ชันบันทึก Step (แก้ไข URL ให้ตรงกับ API) ---
   const toggleStep = async (itemId: number, stepIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -55,9 +60,9 @@ export default function StatusPage() {
     setStats(updatedStats);
     localStorage.setItem('mood_stats', JSON.stringify(updatedStats));
 
-    // ส่งไปอัปเดตที่ Database เพื่อให้ข้อมูลไม่หาย
     try {
-      await fetch(`/api/mood-history/${itemId}`, {
+      // แก้ไข URL ให้ตรงกับโครงสร้าง API (ใช้ PATCH หรือส่งผ่าน ID)
+      await fetch(`/api/history/${itemId}`, {
         method: 'PATCH',
         body: JSON.stringify({ stepsCompleted: updatedStats.find(i => i.id === itemId).stepsCompleted })
       });
@@ -117,9 +122,9 @@ export default function StatusPage() {
     setStats(updated);
     localStorage.setItem('mood_stats', JSON.stringify(updated));
     
-    // ลบใน Database ด้วย
     try {
-      await fetch(`/api/mood-history/${id}`, { method: 'DELETE' });
+      // แก้ไข URL ให้ตรงกับ API
+      await fetch(`/api/history?id=${id}`, { method: 'DELETE' });
     } catch (err) {
       console.error("Delete sync failed");
     }
