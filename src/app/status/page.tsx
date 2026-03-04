@@ -10,18 +10,38 @@ export default function StatusPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
+  // --- ส่วนที่แก้ไข: ดึงข้อมูลจาก API และเรียงลำดับล่าสุด ---
   useEffect(() => {
-    const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
-    setStats(savedStats);
+    const fetchStats = async () => {
+      try {
+        // 1. ดึงข้อมูลจาก API (สมมติว่ามี endpoint นี้)
+        const response = await fetch('/api/mood-history');
+        if (response.ok) {
+          const data = await response.json();
+          // เรียงลำดับจาก ID มากไปน้อย (ล่าสุดอยู่บน) หรือใช้ createdAt
+          const sortedData = data.sort((a: any, b: any) => b.id - a.id);
+          setStats(sortedData);
+        } else {
+          // 2. ถ้า API ล้มเหลว ให้ใช้ localStorage เป็น fallback
+          const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
+          const sortedLocal = savedStats.sort((a: any, b: any) => b.id - a.id);
+          setStats(sortedLocal);
+        }
+      } catch (error) {
+        const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
+        setStats(savedStats.sort((a: any, b: any) => b.id - a.id));
+      }
+    };
+
+    fetchStats();
   }, []);
 
-  // --- ฟังก์ชันที่เพิ่มเข้าไปเพื่อใช้บันทึก Step ---
-  const toggleStep = (itemId: number, stepIndex: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // ป้องกันไม่ให้การกดติ๊กถูกไปสั่งปิด/เปิดแถบขยาย
+  // --- ฟังก์ชันบันทึก Step (เพิ่มการส่งไปที่ API ด้วย) ---
+  const toggleStep = async (itemId: number, stepIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     
     const updatedStats = stats.map(item => {
       if (item.id === itemId) {
-        // สร้าง array stepsCompleted ถ้ายังไม่มี
         const currentSteps = item.stepsCompleted || {};
         const newSteps = {
           ...currentSteps,
@@ -34,6 +54,16 @@ export default function StatusPage() {
 
     setStats(updatedStats);
     localStorage.setItem('mood_stats', JSON.stringify(updatedStats));
+
+    // ส่งไปอัปเดตที่ Database เพื่อให้ข้อมูลไม่หาย
+    try {
+      await fetch(`/api/mood-history/${itemId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stepsCompleted: updatedStats.find(i => i.id === itemId).stepsCompleted })
+      });
+    } catch (err) {
+      console.error("Failed to sync step update");
+    }
   };
 
   const moodDetails: Record<string, any> = {
@@ -82,10 +112,18 @@ export default function StatusPage() {
     return sets[moodKey] || sets['happy'];
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     const updated = stats.filter(item => item.id !== id);
     setStats(updated);
     localStorage.setItem('mood_stats', JSON.stringify(updated));
+    
+    // ลบใน Database ด้วย
+    try {
+      await fetch(`/api/mood-history/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.error("Delete sync failed");
+    }
+    
     setDeleteTarget(null);
   };
 
@@ -162,7 +200,6 @@ export default function StatusPage() {
                                   <p className="text-lg uppercase opacity-100">{ex.title}</p>
                                   <p className="text-sm ml-4 opacity-100">{ex.detail}</p>
                                 </div>
-                                {/* ปรับส่วน Checkbox ให้กดบันทึกได้ */}
                                 <div 
                                   onClick={(e) => toggleStep(item.id, idx, e)}
                                   className="w-8 h-8 border-2 border-black rounded-full flex items-center justify-center bg-white shrink-0 hover:bg-gray-100 transition-colors"
@@ -218,7 +255,6 @@ export default function StatusPage() {
         </div>
       </div>
       
-      {/* Modal ยืนยันการลบ */}
       <AnimatePresence>
         {deleteTarget !== null && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">

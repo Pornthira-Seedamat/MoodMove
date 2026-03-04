@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,12 +8,14 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  tasks Task[]
-  // เพิ่มความสัมพันธ์กับประวัติอารมณ์
-  statusHistory StatusHistory[]
+  id        String          @id @default(cuid())
+  username  String
+  email     String          @unique // ใช้สำหรับ Login และป้องกันอีเมลซ้ำ
+  password  String
+  
+  // ความสัมพันธ์กับข้อมูลอื่นๆ
+  tasks     Task[]
+  histories StatusHistory[]
 }
 
 model Task {
@@ -23,20 +23,19 @@ model Task {
   title     String
   level     Int      // เก็บระดับอารมณ์ 1-5
   createdAt DateTime @default(now())
-  userId    Int
+  
+  userId    String
   user      User     @relation(fields: [userId], references: [id])
 }
 
-// --- เพิ่มตาราง StatusHistory ที่นี่ ---
 model StatusHistory {
-  id             Int      @id @default(autoincrement())
+  id             String   @id @default(cuid())
+  userId         String
+  moodKey        String   // เช่น angry, happy, tired
+  moodLevel      Int      // ระดับ 1-5
+  stepsCompleted Json     // เก็บสถานะการทำท่าต่างๆ เช่น { "0": true, "1": false }
+  day            Int      // เก็บวันที่ 1-31 สำหรับทำสถิติรายเดือน
   createdAt      DateTime @default(now())
-  day            Int      // เก็บวันที่ (เช่น 1-31)
-  moodKey        String   // angry, happy, etc.
-  moodLevel      Int      // 1-5
-  // เก็บสถานะท่าที่ทำเสร็จในรูปแบบ JSON (array of boolean)
-  stepsCompleted Json
   
-  userId         Int
   user           User     @relation(fields: [userId], references: [id])
 }

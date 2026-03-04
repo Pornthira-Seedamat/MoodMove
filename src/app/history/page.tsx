@@ -16,27 +16,54 @@ export default function HistoryPage() {
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  // --- แก้ไข Logic การดึงข้อมูลให้ดึงจาก API ---
   useEffect(() => {
-    const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
-    
-    // กรองเอาเฉพาะข้อมูลของเดือนและปีปัจจุบันเท่านั้น
-    const filteredStats = savedStats.filter((item: any) => {
-      const itemDate = new Date(item.createdAt);
-      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
-    });
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/mood-history');
+        if (response.ok) {
+          const data = await response.json();
+          
+          // กรองข้อมูลและจัดการสีของเส้น
+          const processedStats = data
+            .map((item: any) => ({
+              ...item,
+              // ใช้ level จากฐานข้อมูล หรือกำหนด default ถ้าไม่มี
+              level: item.moodLevel || 3, 
+              // กำหนดสีตาม moodKey เพื่อให้กราฟมีสีสัน
+              color: item.moodKey === 'angry' ? '#C34A4A' : 
+                     item.moodKey === 'tired' ? '#5B7EE3' :
+                     item.moodKey === 'happy' ? '#F4D03F' :
+                     item.moodKey === 'laugh' ? '#F39C12' : '#FF8C00'
+            }))
+            .filter((item: any) => {
+              // กรองเฉพาะเดือนปัจจุบัน (ถ้าไม่มีวันที่บันทึก ให้ถือว่าเป็นเดือนปัจจุบัน)
+              if (!item.createdAt) return item.day >= 1 && item.day <= daysInMonth;
+              const itemDate = new Date(item.createdAt);
+              return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+            })
+            .sort((a: any, b: any) => a.day - b.day); // เรียงตามวันที่จาก 1 ไป 31
 
-    const sortedStats = filteredStats.sort((a: any, b: any) => 
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-    setStats(sortedStats);
-  }, [currentMonth, currentYear]);
+          setStats(processedStats);
+        } else {
+          // Fallback ไปใช้ LocalStorage ถ้า API มีปัญหา
+          const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
+          setStats(savedStats.sort((a: any, b: any) => a.day - b.day));
+        }
+      } catch (error) {
+        console.error("Fetch stats error:", error);
+      }
+    };
+
+    fetchStats();
+  }, [currentMonth, currentYear, daysInMonth]);
 
   const emojis = ['😡', '😔', '😐', '😊', '🤩'];
 
   const getXPos = (day: number, index: number) => {
-    // ป้องกันการหารด้วย 0 ถ้าเดือนมีวันเดียว (ซึ่งไม่มีทางเป็นไปได้แต่กันไว้)
     const totalDays = daysInMonth > 1 ? daysInMonth - 1 : 1;
     const base = ((day - 1) / totalDays) * 100;
+    // ป้องกันเส้นซ้อนกันในวันเดียวกัน
     const sameDayEntries = stats.filter((s, idx) => s.day === day && idx < index).length;
     return base + (sameDayEntries * 1.5); 
   };
@@ -46,7 +73,6 @@ export default function HistoryPage() {
   return (
     <main className="min-h-screen bg-[#C34A4A] flex flex-col items-center relative overflow-hidden">
       
-      {/* ปุ่มย้อนกลับและของตกแต่ง (คงเดิม 100%) */}
       <div onClick={() => router.back()} className="absolute top-8 left-6 z-50 cursor-pointer text-white text-4xl font-light hover:scale-110 transition">←</div>
       <div className="absolute top-12 left-10 text-4xl opacity-20 pointer-events-none">✨</div>
       <div className="absolute bottom-10 right-10 text-7xl opacity-20 pointer-events-none">🌸</div>
@@ -73,7 +99,6 @@ export default function HistoryPage() {
           </div>
 
           <div className="absolute left-20 bottom-24 right-16 top-10">
-            {/* แกน Emoji แนวตั้ง */}
             <div className="absolute -left-12 top-0 bottom-0 flex flex-col justify-between items-center z-20 py-0">
                {emojis.slice().reverse().map((emoji, i) => (
                  <span 
@@ -86,7 +111,6 @@ export default function HistoryPage() {
                ))}
             </div>
 
-            {/* เส้นแกนกราฟ */}
             <div className="absolute inset-0 border-l-[4px] border-b-[4px] border-black pointer-events-none"></div>
 
             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -113,7 +137,6 @@ export default function HistoryPage() {
               })}
             </svg>
             
-            {/* ตัวเลขวันที่ (อัปเดตตามเดือนปัจจุบันอัตโนมัติ) */}
             <div className="absolute -bottom-8 left-0 w-full flex justify-between px-1">
                {days.map(d => (
                  <span key={d} className={`font-bold text-black ${d % 5 === 0 || d === 1 || d === daysInMonth ? 'text-lg' : 'text-[10px]'}`}>
