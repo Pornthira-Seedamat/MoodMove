@@ -5,9 +5,8 @@ generator client {
 // แก้ไขบรรทัดที่ 6 และ 7 ให้เป็นแบบนี้เป๊ะๆ ครับ
 datasource db {
   provider = "postgresql"
-  url      = "postgres://6c25bd074d2bd9e1d9748c7eead1c1f05311feeda99b62c362dacbf37578dc76:sk_mH7u_ZrG7BLz5rjl1eUTo@db.prisma.io:5432/postgres?sslmode=require&pool=true"
+  url      = env("DATABASE_URL")
 }
-
 model User {
   id        String          @id @default(cuid())
   username  String
