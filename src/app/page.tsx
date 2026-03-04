@@ -89,7 +89,6 @@ export default function MoodMove() {
     return String(email).toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
   };
 
-  // แก้ไข handleSignUp ให้รองรับข้อมูลจาก Prisma อย่างถูกต้อง
   const handleSignUp = async () => {
     if (!userData.username || !userData.email || !userData.password) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -114,24 +113,29 @@ export default function MoodMove() {
       const data = await response.json();
 
       if (response.ok) {
-        // สำคัญ: เก็บข้อมูล ID ที่ได้จาก Prisma ลงใน LocalStorage ด้วย
-        const userToSave = { ...data.user, password: userData.password };
-        localStorage.setItem('moodmove_user', JSON.stringify(userToSave));
+        // ดึง ID จาก data.user หรือ data (แล้วแต่โครงสร้าง API ของคุณ)
+        const userId = data.user?.id || data.id;
+        const userWithId = { 
+            id: userId, 
+            username: userData.username, 
+            email: userData.email, 
+            password: userData.password 
+        };
+        localStorage.setItem('moodmove_user', JSON.stringify(userWithId));
         localStorage.setItem('isLoggedIn', 'true');
-        setUserData(userToSave);
+        setUserData(userWithId);
         setIsLoggedIn(true);
         setIsSignUpPage(false);
         alert('สมัครสมาชิกสำเร็จ!');
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการสมัครสมาชิก');
+        alert(data.error || 'อีเมลนี้อาจถูกใช้งานแล้ว');
       }
     } catch (error) {
       console.error("Signup Error:", error);
-      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ Prisma');
     }
   };
 
-  // แก้ไข handleLogin ให้ตรวจสอบข้อมูลเบื้องต้น
   const handleLogin = () => {
     const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
     if (loginInput.email === savedUser.email && loginInput.password === savedUser.password && savedUser.email) {
@@ -142,30 +146,53 @@ export default function MoodMove() {
       setIsWhiteMode(true);
     } else {
       setLoginError(true);
+      alert('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
   };
 
-  // บันทึกอารมณ์ลง Prisma (History Model)
   const handleConfirmMood = async () => {
-    setIsConfirmed(true);
-    if (!userData.id) {
-        console.error("No User ID found for Prisma");
-        return;
-    }
+    // 1. เริ่มกระบวนการบันทึก
     try {
-      await fetch('/api/history', {
+      const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
+      const userId = savedUser.id;
+
+      if (!userId) {
+        alert("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่");
+        return;
+      }
+
+      const payload = {
+        userId: userId,
+        moodKey: mood, // อารมณ์ที่เลือก
+        moodLevel: Number(moodData[mood].level),
+        day: new Date().getDate(), // ส่งเป็น Number ให้ Prisma
+        stepsCompleted: {}
+      };
+
+      // 2. ส่งข้อมูลไปที่ API
+      const response = await fetch('/api/mood-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mood: mood,
-          userId: userData.id // ส่ง ID ไปเพื่อสร้าง Relation ใน Prisma
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (response.ok) {
+        console.log("บันทึกลงฐานข้อมูลเรียบร้อย!");
+        
+        // 3. ✅ สำคัญ: ห้าม router.push('/status') ตรงนี้
+        // ให้เซตค่าเพื่อเปิดหน้าแนะนำกิจกรรมในหน้านี้แทน
+        setIsConfirmed(true); 
+        setStep(1); // เริ่มที่ Step 1 ของการแนะนำกิจกรรม
+      } else {
+        const errorData = await response.json();
+        alert("บันทึกไม่สำเร็จ: " + (errorData.details || "เกิดข้อผิดพลาดที่ Server"));
+      }
     } catch (error) {
-      console.error("Failed to save mood history to Prisma:", error);
+      console.error("Fetch Error:", error);
+      alert("การเชื่อมต่อล้มเหลว");
     }
   };
-
+  
   useEffect(() => {
     if (typeof window !== "undefined") {
       const loop = new Audio("/countdown-loop.mp3");
@@ -284,13 +311,13 @@ export default function MoodMove() {
               <div className="absolute top-[65%] right-[12%] text-2xl opacity-80 pointer-events-none">😡</div>
               
             <div className="w-full max-w-2xl bg-white border-2 border-black p-10 flex flex-col items-center z-10">
-              <h1 className="text-8xl font-black mb-2 text-black">{isSignUpPage ? "sign up" : "Login"}</h1>
-              <p className="text-xl font-bold text-black mb-8">{isSignUpPage ? "สมัครสมาชิก" : "ออกกำลังกายด้วยความรู้สึก ในแต่ละวัน"}</p>
+              <h1 className="text-8xl font-black mb-2 text-black">{isSignUpPage ? "Sign Up" : "Login"}</h1>
+              <p className="text-xl font-bold text-black mb-8">{isSignUpPage ? "สร้างบัญชีผู้ใช้ใหม่" : "ออกกำลังกายด้วยความรู้สึก ในแต่ละวัน"}</p>
               <div className="w-full space-y-4 max-w-md text-left">
                 {isSignUpPage && (
                   <div>
                     <label className="text-2xl font-bold text-black">ชื่อผู้ใช้</label>
-                    <input type="text" value={userData.username} onChange={(e) => setUserData({...userData, username: e.target.value})} className="w-full p-3 bg-gray-100 text-black text-xl font-bold outline-none" />
+                    <input type="text" value={userData.username} onChange={(e) => setUserData({...userData, username: e.target.value})} className="w-full p-3 bg-gray-100 text-black text-xl font-bold outline-none border-2 border-transparent focus:border-black" />
                   </div>
                 )}
                 <div>
@@ -299,12 +326,17 @@ export default function MoodMove() {
                 </div>
                 <div>
                   <label className="text-2xl font-bold text-black">รหัสผ่าน</label>
-                  <input type="password" value={isSignUpPage ? userData.password : loginInput.password} onChange={(e) => isSignUpPage ? setUserData({...userData, password: e.target.value}) : setLoginInput({...loginInput, password: e.target.value})} className={`w-full p-3 bg-gray-100 text-black text-xl font-bold outline-none border-2 ${loginError && !isSignUpPage ? 'border-red-500' : 'border-transparent'}`} />
+                  <input type="password" value={isSignUpPage ? userData.password : loginInput.password} onChange={(e) => isSignUpPage ? setUserData({...userData, password: e.target.value}) : setLoginInput({...loginInput, password: e.target.value})} className={`w-full p-3 bg-gray-100 text-black text-xl font-bold outline-none border-2 transition-all ${loginError && !isSignUpPage ? 'border-red-500' : 'border-transparent focus:border-black'}`} />
                 </div>
                 {!isSignUpPage && (
                   <div className="flex justify-between text-gray-500 font-bold">
                     <span className="cursor-pointer hover:underline" onClick={() => setIsSignUpPage(true)}>สมัครสมาชิก</span>
                     <span className="cursor-pointer">ลืมรหัสผ่าน?</span>
+                  </div>
+                )}
+                {isSignUpPage && (
+                  <div className="text-center">
+                    <span className="text-gray-500 font-bold cursor-pointer hover:underline" onClick={() => setIsSignUpPage(false)}>มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</span>
                   </div>
                 )}
               </div>
@@ -320,7 +352,7 @@ export default function MoodMove() {
               <div className={`flex items-center gap-6 ${isWhiteMode ? 'text-black' : 'text-white'}`}>
                 <div className="relative group cursor-pointer" onClick={resetToHome}>
                   <span className="font-bold">Home</span>
-                  {isConfirmed && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-white"></div>}
+                  {!isWhiteMode && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-white"></div>}
                 </div>
                 <div onClick={() => router.push('/history')} className="relative group cursor-pointer">
                   <span className="opacity-80 font-bold">สถิติ</span>

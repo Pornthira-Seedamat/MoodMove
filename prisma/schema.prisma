@@ -1,19 +1,19 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
-// แก้ไขบรรทัดที่ 6 และ 7 ให้เป็นแบบนี้เป๊ะๆ ครับ
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
+
 model User {
   id        String          @id @default(cuid())
   username  String
-  email     String          @unique // ใช้สำหรับ Login และป้องกันอีเมลซ้ำ
+  email     String          @unique
   password  String
-  
-  // ความสัมพันธ์กับข้อมูลอื่นๆ
   tasks     Task[]
   histories StatusHistory[]
 }
@@ -25,7 +25,7 @@ model Task {
   createdAt DateTime @default(now())
   
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model StatusHistory {
@@ -33,9 +33,9 @@ model StatusHistory {
   userId         String
   moodKey        String   // เช่น angry, happy, tired
   moodLevel      Int      // ระดับ 1-5
-  stepsCompleted Json     // เก็บสถานะการทำท่าต่างๆ เช่น { "0": true, "1": false }
-  day            Int      // เก็บวันที่ 1-31 สำหรับทำสถิติรายเดือน
+  stepsCompleted Json     // เก็บสถานะการทำท่าต่างๆ
+  day            Int      // สำหรับทำสถิติรายเดือน
   createdAt      DateTime @default(now())
   
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

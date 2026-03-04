@@ -20,43 +20,41 @@ export default function HistoryPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/mood-history');
+        const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
+        const userId = savedUser.id;
+
+        if (!userId) return;
+
+        // ✅ แก้ไข URL เป็น /api/mood-history
+        const response = await fetch(`/api/mood-history?userId=${userId}`);
+        
         if (response.ok) {
           const data = await response.json();
           
-          // กรองข้อมูลและจัดการสีของเส้น
           const processedStats = data
             .map((item: any) => ({
               ...item,
-              // ใช้ level จากฐานข้อมูล หรือกำหนด default ถ้าไม่มี
-              level: item.moodLevel || 3, 
-              // กำหนดสีตาม moodKey เพื่อให้กราฟมีสีสัน
+              level: Number(item.moodLevel) || 3, 
               color: item.moodKey === 'angry' ? '#C34A4A' : 
                      item.moodKey === 'tired' ? '#5B7EE3' :
                      item.moodKey === 'happy' ? '#F4D03F' :
                      item.moodKey === 'laugh' ? '#F39C12' : '#FF8C00'
             }))
             .filter((item: any) => {
-              // กรองเฉพาะเดือนปัจจุบัน (ถ้าไม่มีวันที่บันทึก ให้ถือว่าเป็นเดือนปัจจุบัน)
-              if (!item.createdAt) return item.day >= 1 && item.day <= daysInMonth;
+              // กรองเฉพาะเดือนปัจจุบัน
               const itemDate = new Date(item.createdAt);
               return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
             })
-            .sort((a: any, b: any) => a.day - b.day); // เรียงตามวันที่จาก 1 ไป 31
+            .sort((a: any, b: any) => a.day - b.day);
 
           setStats(processedStats);
-        } else {
-          // Fallback ไปใช้ LocalStorage ถ้า API มีปัญหา
-          const savedStats = JSON.parse(localStorage.getItem('mood_stats') || '[]');
-          setStats(savedStats.sort((a: any, b: any) => a.day - b.day));
         }
       } catch (error) {
-        console.error("Fetch stats error:", error);
+        console.error("Fetch history error:", error);
       }
     };
-
     fetchStats();
-  }, [currentMonth, currentYear, daysInMonth]);
+  }, [currentMonth, currentYear]);
 
   const emojis = ['😡', '😔', '😐', '😊', '🤩'];
 
