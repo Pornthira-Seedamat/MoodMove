@@ -90,6 +90,7 @@ export default function MoodMove() {
     return String(email).toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
   };
 
+  // --- ส่วนที่เพิ่มการเชื่อมต่อ API ---
   const handleSignUp = async () => {
     if (!userData.username || !userData.email || !userData.password) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');
@@ -99,14 +100,38 @@ export default function MoodMove() {
       alert('กรุณากรอกรูปแบบอีเมลให้ถูกต้อง');
       return;
     }
-    const userToSave = { ...userData, id: Date.now().toString() };
-    localStorage.setItem('moodmove_user', JSON.stringify(userToSave));
-    localStorage.setItem('isLoggedIn', 'true');
-    setUserData(userToSave);
-    setIsLoggedIn(true);
-    setIsSignUpPage(false);
-    alert('สมัครสมาชิกเรียบร้อยแล้ว!');
+
+    try {
+      // ส่งข้อมูลไปที่ API Route ที่เราสร้างไว้
+      const response = await fetch('/api/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: userData.username,
+          email: userData.email,
+          password: userData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // บันทึกข้อมูลลง LocalStorage เพื่อให้ระบบเดิมทำงานต่อได้
+        localStorage.setItem('moodmove_user', JSON.stringify(data.user));
+        localStorage.setItem('isLoggedIn', 'true');
+        setUserData(data.user);
+        setIsLoggedIn(true);
+        setIsSignUpPage(false);
+        alert('สมัครสมาชิกสำเร็จและบันทึกลงฐานข้อมูลแล้ว!');
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการสมัครสมาชิก');
+      }
+    } catch (error) {
+      console.error("Signup Error:", error);
+      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    }
   };
+  // ------------------------------
 
   const handleLogin = () => {
     const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
@@ -232,13 +257,13 @@ export default function MoodMove() {
       <AnimatePresence mode="wait">
         {!isLoggedIn ? (
           <motion.div key={isSignUpPage ? "signup" : "login"} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-white p-4">
-             {/* Login Background Icons */}
-             <div className="absolute top-40 left-[15%] text-6xl pointer-events-none">😁</div>
-             <div className="absolute top-[45%] left-[10%] text-8xl pointer-events-none">🤩</div>
-             <div className="absolute bottom-[10%] right-[15%] text-9xl pointer-events-none">😊</div>
-             <div className="absolute bottom-[35%] right-[10%] text-4xl opacity-80 pointer-events-none">😔</div>
-             <div className="absolute top-[65%] right-[12%] text-2xl opacity-80 pointer-events-none">😡</div>
-             
+              {/* Login Background Icons */}
+              <div className="absolute top-40 left-[15%] text-6xl pointer-events-none">😁</div>
+              <div className="absolute top-[45%] left-[10%] text-8xl pointer-events-none">🤩</div>
+              <div className="absolute bottom-[10%] right-[15%] text-9xl pointer-events-none">😊</div>
+              <div className="absolute bottom-[35%] right-[10%] text-4xl opacity-80 pointer-events-none">😔</div>
+              <div className="absolute top-[65%] right-[12%] text-2xl opacity-80 pointer-events-none">😡</div>
+              
             <div className="w-full max-w-2xl bg-white border-2 border-black p-10 flex flex-col items-center z-10">
               <h1 className="text-8xl font-black mb-2 text-black">{isSignUpPage ? "sign up" : "Login"}</h1>
               <p className="text-xl font-bold text-black mb-8">{isSignUpPage ? "สมัครสมาชิก" : "ออกกำลังกายด้วยความรู้สึก ในแต่ละวัน"}</p>
@@ -421,11 +446,11 @@ export default function MoodMove() {
                              {step !== 3 && (
                                <div className="w-full flex justify-end mt-auto pt-8">
                                  <button 
-                                    onClick={() => setStep(step + 1)} 
-                                    className="text-4xl font-black text-black uppercase hover:translate-x-2 transition-transform"
-                                  >
-                                    {step === 1 ? "ถัดไป" : "เริ่ม"}
-                                  </button>
+                                   onClick={() => setStep(step + 1)} 
+                                   className="text-4xl font-black text-black uppercase hover:translate-x-2 transition-transform"
+                                 >
+                                   {step === 1 ? "ถัดไป" : "เริ่ม"}
+                                 </button>
                                </div>
                              )}
                           </div>
