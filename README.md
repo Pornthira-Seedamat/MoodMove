@@ -40,16 +40,16 @@
 
 ## เทคโนโลยีที่ใช้ (Tech Stack)
 **Frontend**
-Next.js (App Router): เฟรมเวิร์กหลักสำหรับการจัดการโครงสร้างเว็บไซต์
-React: ใช้จัดการ UI และ State ภายในแอปพลิเคชัน
-Tailwind CSS: ใช้สำหรับการออกแบบสไตล์และ Layout ที่สวยงาม
-Framer Motion: ใช้สำหรับงาน Animation และ Transition ต่างๆ
-Lucide React: ชุดไอคอนสำหรับตกแต่งส่วนติดต่อผู้ใช้
+- Next.js (App Router): เฟรมเวิร์กหลักสำหรับการจัดการโครงสร้างเว็บไซต์
+- React: ใช้จัดการ UI และ State ภายในแอปพลิเคชัน
+- Tailwind CSS: ใช้สำหรับการออกแบบสไตล์และ Layout ที่สวยงาม
+- Framer Motion: ใช้สำหรับงาน Animation และ Transition ต่างๆ
+- Lucide React: ชุดไอคอนสำหรับตกแต่งส่วนติดต่อผู้ใช้
 
 **Backend**
-Next.js API Routes: จัดการระบบ Server-side logic และการเชื่อมต่อ API
-Prisma ORM: ตัวกลางในการสื่อสารและจัดการข้อมูลในฐานข้อมูล
-PostgreSQL: ระบบฐานข้อมูลเชิงสัมพันธ์ที่ใช้เก็บข้อมูลจริง (เช่น ผ่าน Supabase หรือ Neon)
+- Next.js API Routes: จัดการระบบ Server-side logic และการเชื่อมต่อ API
+- Prisma ORM: ตัวกลางในการสื่อสารและจัดการข้อมูลในฐานข้อมูล
+- PostgreSQL: ระบบฐานข้อมูลเชิงสัมพันธ์ที่ใช้เก็บข้อมูลจริง (เช่น ผ่าน Supabase หรือ Neon)
 
 **Deployment**
-Vercel: ใช้สำหรับการ Deploy โปรเจกต์ขึ้นสู่ระบบออนไลน์แบบ Production
+- Vercel: ใช้สำหรับการ Deploy โปรเจกต์ขึ้นสู่ระบบออนไลน์แบบ Production
