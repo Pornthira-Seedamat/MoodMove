@@ -5,8 +5,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  // วาง URL ของ Supabase ลงไปตรงๆ แทน env("DATABASE_URL")
+  url      = "postgresql://postgres:32003200Aum_@1@db.hsktcdreursqnlkoxzas.supabase.co:5432/postgres"
 }
 
 model User {
