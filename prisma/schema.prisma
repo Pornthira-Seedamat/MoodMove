@@ -7,7 +7,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   // วาง URL ของ Supabase ลงไปตรงๆ แทน env("DATABASE_URL")
-  url      = "postgresql://postgres:32003200Aum_@1@db.hsktcdreursqnlkoxzas.supabase.co:5432/postgres"
+  url      = "postgresql://postgres:MoodMove2026@db.hsktcdreursqnlkoxzas.supabase.co:5432/postgres"
 }
 
 model User {
