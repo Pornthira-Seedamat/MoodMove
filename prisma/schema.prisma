@@ -4,12 +4,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 datasource db {
   provider = "postgresql"
-  // วาง URL ของ Supabase ลงไปตรงๆ แทน env("DATABASE_URL")
-  url      = "postgresql://postgres:MoodMove2026@db.hsktcdreursqnlkoxzas.supabase.co:5432/postgres"
+  // ใช้พอร์ต 6543 เพื่อให้ Vercel คุยกับ Supabase ได้
+  url = "postgresql://postgres:MoodMove2026@db.hsktcdreursqnlkoxzas.supabase.co:6543/postgres?pgbouncer=true"
 }
-
 model User {
   id        String          @id @default(cuid())
   username  String
