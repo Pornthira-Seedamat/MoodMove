@@ -7,8 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // ใช้พอร์ต 6543 เพื่อให้ Vercel คุยกับ Supabase ได้
-  url = "postgresql://postgres:MoodMove2026@db.hsktcdreursqnlkoxzas.supabase.co:5432/postgres"
+  url      = env("DATABASE_URL")
 }
 model User {
   id        String          @id @default(cuid())
