@@ -7,8 +7,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:MoodMove2026@db.hsktcdreursqnlkoxzas.supabase.co:6543/postgres?pgbouncer=true"
+  url      = env("DATABASE_URL")
 }
+
 model User {
   id        String          @id @default(cuid())
   username  String
