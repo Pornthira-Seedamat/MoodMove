@@ -1,25 +1,31 @@
-import { prisma } from "@/component/lib/prisma";
-import { NextResponse } from "next/server";
+import { prisma } from "@/component/lib/prisma"; // <--- เช็คว่า path นี้มีไฟล์ prisma.ts อยู่จริงไหมimport { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  try {
-    const { email, password } = await req.json();
+  try 
+    const body = await req.json();
+    const { email, password } = body;
 
-    // ค้นหา User จาก email ใน Prisma
+    if (!email || !password) {
+      return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 });
+    }
+
+    // ค้นหาผู้ใช้
     const user = await prisma.user.findUnique({
       where: { email: email },
     });
 
-    // เช็คว่าเจอ User ไหม และรหัสผ่านตรงกันไหม
+    // ถ้าไม่เจอ user หรือรหัสไม่ตรง
     if (!user || user.password !== password) {
       return NextResponse.json({ error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" }, { status: 401 });
     }
 
-    // ถ้าถูก ส่งข้อมูล User กลับไป (ไม่ต้องส่งรหัสผ่านไปนะ)
+    // ลบรหัสผ่านก่อนส่งกลับไปที่หน้าบ้าน
     const { password: _, ...userWithoutPassword } = user;
-    return NextResponse.json({ user: userWithoutPassword });
+    return NextResponse.json({ user: userWithoutPassword }, { status: 200 });
 
   } catch (error) {
+    console.error("❌ Login Error:", error);
+    // ถ้าพังตรงนี้ จะขึ้นว่า "เกิดข้อผิดพลาดเซิร์ฟเวอร์"
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
