@@ -138,37 +138,42 @@ export default function MoodMove() {
     }
   };
 
- const handleLogin = async () => { // เพิ่ม async ตรงนี้เพื่อให้ใช้ await ได้
-    try {
-      const response = await fetch('/api/user/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: loginInput.email,
-          password: loginInput.password
-        }),
-      });
+ const handleLogin = async () => {
+  console.log("กำลังส่งข้อมูล Login...");
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginInput),
+    });
 
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
       const data = await response.json();
-
+      
       if (response.ok) {
-        // บันทึกข้อมูลที่ได้จาก Database ลงในความจำเบราว์เซอร์
+        // ✅ 1. เก็บข้อมูลลง LocalStorage เพื่อให้ Refresh แล้วไม่หลุด
         localStorage.setItem('moodmove_user', JSON.stringify(data.user));
         localStorage.setItem('isLoggedIn', 'true');
+        
+        // ✅ 2. อัปเดต State ในโปรแกรม
         setUserData(data.user);
         setIsLoggedIn(true);
-        setLoginError(false);
-        setIsWhiteMode(true);
-        alert('เข้าสู่ระบบสำเร็จ!');
+        setLoginError(false); // ล้าง error เก่า
       } else {
         setLoginError(true);
-        alert(data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+        alert(data.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       }
-    } catch (error) {
-      console.error("Login Error:", error);
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } else {
+      const text = await response.text();
+      console.error("Server returned non-JSON:", text);
+      alert("เซิร์ฟเวอร์ขัดข้อง กรุณาลองใหม่ภายหลัง");
     }
-  };
+  } catch (error) {
+    console.error("Fetch error:", error);
+    alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+  }
+};
   const handleConfirmMood = async () => {
     // 1. เริ่มกระบวนการบันทึก
     try {
@@ -325,10 +330,10 @@ const playSoundWithDuration = (audio: HTMLAudioElement | null, durationMs: numbe
   }, [step, currentExIndex, currentExerciseSteps]);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('moodmove_user');
-    if (savedUser) { setUserData(JSON.parse(savedUser)); }
-    const savedLogin = localStorage.getItem('isLoggedIn');
-    if (savedLogin === 'true') { setIsLoggedIn(true); }
+  const savedUser = localStorage.getItem('moodmove_user');
+  if (savedUser) { setUserData(JSON.parse(savedUser)); }
+  const savedLogin = localStorage.getItem('isLoggedIn');
+  if (savedLogin === 'true') { setIsLoggedIn(true); }
     setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
   }, []);
 
