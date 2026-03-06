@@ -1,7 +1,8 @@
-import { prisma } from "@/component/lib/prisma"; // <--- เช็คว่า path นี้มีไฟล์ prisma.ts อยู่จริงไหมimport { NextResponse } from "next/server";
+import { NextResponse } from "next/server"; // เพิ่มบรรทัดนี้
+import { prisma } from "@/component/lib/prisma"; 
 
 export async function POST(req: Request) {
-  try { // <--- ตรวจสอบว่ามีปีกกาเปิดตรงนี้
+  try {
     const body = await req.json();
     const { email, password } = body;
 
