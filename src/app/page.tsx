@@ -76,6 +76,8 @@ export default function MoodMove() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const preTimerRef = useRef<NodeJS.Timeout | null>(null);
   const loopAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sound1Ref = useRef<HTMLAudioElement | null>(null);
+  const sound2Ref = useRef<HTMLAudioElement | null>(null);
 
   const moodData: Record<string, { color: string; label: string; bgIcon: string; level: number }> = {
     angry: { color: 'bg-[#C34A4A]', label: 'โกรธ?', bgIcon: '💢', level: 1 },
@@ -194,13 +196,27 @@ export default function MoodMove() {
   };
   
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const loop = new Audio("/countdown-loop.mp3");
-      loop.loop = true;
-      loop.preload = "auto";
-      loopAudioRef.current = loop;
-    }
-  }, []);
+  if (typeof window !== "undefined") {
+    const loop = new Audio("/countdown-loop.mp3");
+    loop.loop = true;
+    loopAudioRef.current = loop;
+
+    // โหลดเสียงใหม่
+    sound1Ref.current = new Audio("/1.mp3");
+    sound2Ref.current = new Audio("/2.mp3");
+  }
+}, []);
+
+const playSoundWithDuration = (audio: HTMLAudioElement | null, durationMs: number) => {
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(err => console.log("Playback blocked", err));
+  
+  setTimeout(() => {
+    audio.pause();
+    audio.currentTime = 0;
+  }, durationMs);
+};
 
   const playAudio = async (audio: HTMLAudioElement | null) => {
     if (!audio) return;
@@ -227,30 +243,46 @@ export default function MoodMove() {
     stopAudio(loopAudioRef.current);
   };
 
-  useEffect(() => {
-    if (isActive && seconds > 0) {
-      timerRef.current = setInterval(() => {
-        setSeconds((prev) => {
-          const nextValue = prev - 1;
-          if (nextValue === 10) playAudio(loopAudioRef.current);
-          return nextValue;
-        });
-      }, 1000);
-    } else if (seconds <= 0 && isActive) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      stopAudio(loopAudioRef.current); 
-      setIsActive(false);
-
-      if (currentExIndex < currentExerciseSteps.length - 1) {
-        setCurrentExIndex(prev => prev + 1);
-        setStep(3); 
-      } else {
-        setEncouragement(encouragementQuotes[Math.floor(Math.random() * encouragementQuotes.length)]);
-        setStep(5);
-      }
+ useEffect(() => {
+  if (isActive && seconds > 0) {
+    const currentTaskDuration = currentExerciseSteps[currentExIndex].duration;
+    
+    // 1. เริ่มท่า: เล่น 1.mp3 นาน 8 วิ
+    if (seconds === currentTaskDuration) {
+      playSoundWithDuration(sound1Ref.current, 8000);
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isActive, seconds, currentExIndex, currentExerciseSteps]);
+
+    timerRef.current = setInterval(() => {
+      setSeconds((prev) => {
+        const nextValue = prev - 1;
+
+        // 2. ช่วงใกล้จบ: เล่น 2.mp3 นาน 10 วิ
+        // ลบเงื่อนไข playAudio(loopAudioRef.current) ออกจากตรงนี้แล้ว
+        if (nextValue === 10) {
+          playSoundWithDuration(sound2Ref.current, 10000);
+        }
+        
+        return nextValue;
+      });
+    }, 1000);
+  } else if (seconds <= 0 && isActive) {
+    if (timerRef.current) clearInterval(timerRef.current);
+    // หยุดทุกเสียงเมื่อจบเซ็ต
+    stopAudio(loopAudioRef.current);
+    stopAudio(sound1Ref.current);
+    stopAudio(sound2Ref.current);
+    setIsActive(false);
+
+    if (currentExIndex < currentExerciseSteps.length - 1) {
+      setCurrentExIndex(prev => prev + 1);
+      setStep(3); 
+    } else {
+      setEncouragement(encouragementQuotes[Math.floor(Math.random() * encouragementQuotes.length)]);
+      setStep(5);
+    }
+  }
+  return () => { if (timerRef.current) clearInterval(timerRef.current); };
+}, [isActive, seconds, currentExIndex, currentExerciseSteps]);
 
   useEffect(() => {
     if (step === 3) {

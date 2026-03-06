@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza19DaUV6NjhsdzBhNHMySTBsRjYza2EiLCJhcGlfa2V5IjoiMDFLSlpaMEFNQTZaMUtIOUhHN0pGOTZCMjQiLCJ0ZW5hbnRfaWQiOiI5YWE3YjVmOTExOTUyYmE3Njg5NmEwMWYzZTczNmYyZmVjYTlmMjA5MjVhMWNkZjc5YWUyODAxNWFhNWI2Y2UzIiwiaW50ZXJuYWxfc2VjcmV0IjoiMmNjZmJhODctYzZkYi00ZGE1LTgzNTAtZTBlY2U1NDhiNmIzIn0.teWECxEJ4Ok5brVx3j2LYXzAFhhoETKDNc2JKUIxNyI"
   // directUrl = env("DIRECT_URL") // ถ้ามีบรรทัดนี้ให้ใส่คอมเมนต์ปิดไว้ก่อน
 }
 

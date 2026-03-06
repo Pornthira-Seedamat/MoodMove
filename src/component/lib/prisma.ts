@@ -5,6 +5,10 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 const DATABASE_URL_TEST = "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza19DaUV6NjhsdzBhNHMySTBsRjYza2EiLCJhcGlfa2V5IjoiMDFLSlpaMEFNQTZaMUtIOUhHN0pGOTZCMjQiLCJ0ZW5hbnRfaWQiOiI5YWE3YjVmOTExOTUyYmE3Njg5NmEwMWYzZTczNmYyZmVjYTlmMjA5MjVhMWNkZjc5YWUyODAxNWFhNWI2Y2UzIiwiaW50ZXJuYWxfc2VjcmV0IjoiMmNjZmJhODctYzZkYi00ZGE1LTgzNTAtZTBlY2U1NDhiNmIzIn0.teWECxEJ4Ok5brVx3j2LYXzAFhhoETKDNc2JKUIxNyI";
 
 const prismaClientSingleton = () => {
+  if (!DATABASE_URL_TEST) {
+    console.error("❌ Error: DATABASE_URL_TEST is not defined!");
+  }
+  
   return new PrismaClient({
     datasources: {
       db: {
