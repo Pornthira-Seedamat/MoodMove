@@ -138,19 +138,39 @@ export default function MoodMove() {
     }
   };
 
-  const handleLogin = () => {
-    const savedUser = JSON.parse(localStorage.getItem('moodmove_user') || '{}');
-    if (loginInput.email === savedUser.email && loginInput.password === savedUser.password && savedUser.email) {
-      setIsLoggedIn(true);
+  const handleLogin = async () => {
+  try {
+    // 1. ส่ง email และ password ไปที่ API ของเรา
+    const response = await fetch('/api/user/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: loginInput.email,
+        password: loginInput.password
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // 2. ถ้า Server บอกว่ารหัสถูก (ok) ให้เซฟข้อมูลลง LocalStorage ใหม่
+      localStorage.setItem('moodmove_user', JSON.stringify(data.user));
       localStorage.setItem('isLoggedIn', 'true');
-      setUserData(savedUser);
+      setUserData(data.user);
+      setIsLoggedIn(true);
       setLoginError(false);
       setIsWhiteMode(true);
+      alert('เข้าสู่ระบบสำเร็จ!');
     } else {
+      // 3. ถ้า Server บอกว่ารหัสผิด
       setLoginError(true);
-      alert('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      alert(data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
-  };
+  } catch (error) {
+    console.error("Login Error:", error);
+    alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+  }
+};
 
   const handleConfirmMood = async () => {
     // 1. เริ่มกระบวนการบันทึก
