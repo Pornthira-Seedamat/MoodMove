@@ -1,45 +1,33 @@
 // src/app/api/user/route.ts
 import { NextResponse } from 'next/server';
-// ตรวจสอบให้แน่ใจว่า path @/component/lib/prisma มีการ export const prisma = new PrismaClient() ไว้จริงๆ
 import { prisma } from '@/component/lib/prisma'; 
+import bcrypt from 'bcryptjs'; // 1. นำเข้า bcrypt
 
 export async function POST(request: Request) {
   try {
-    // 1. ตรวจสอบว่ามี Body ส่งมาหรือไม่ และจัดการ Error กรณี JSON พัง
     const body = await request.json().catch(() => null);
-    
-    if (!body) {
-      return NextResponse.json({ error: "ไม่พบข้อมูลที่ส่งมา (Invalid JSON)" }, { status: 400 });
-    }
+    if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
     const { email, username, password } = body;
 
-    // 2. Validation ขั้นพื้นฐานก่อนส่งเข้า Prisma
     if (!email || !username || !password) {
       return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 });
     }
 
-    // 3. ทำความสะอาดข้อมูล (Data Sanitization)
-    const cleanEmail = String(email).toLowerCase().trim();
-    const cleanUsername = String(username).trim();
+    // 2. เข้ารหัสผ่านก่อนบันทึก (Salt round = 10)
+    const hashedPassword = await bcrypt.hash(String(password), 10);
 
-    // 4. บันทึกลงฐานข้อมูลผ่าน Prisma
     const user = await prisma.user.create({
       data: {
-        email: cleanEmail,
-        username: cleanUsername,
-        password: String(password), // ในอนาคตแนะนำให้ใช้ bcrypt hash ก่อนบันทึก
+        email: String(email).toLowerCase().trim(),
+        username: String(username).trim(),
+        password: hashedPassword, // 3. บันทึกตัวที่เข้ารหัสแล้วลงไป
       },
     });
 
-    // 5. Return ข้อมูลกลับไปที่หน้าบ้าน (ไม่ส่ง password กลับไปเพื่อความปลอดภัย)
     return NextResponse.json({ 
       message: "สมัครสมาชิกสำเร็จ", 
-      user: { 
-        id: user.id, 
-        username: user.username, 
-        email: user.email 
-      } 
+      user: { id: user.id, username: user.username, email: user.email } 
     }, { status: 201 });
 
   } catch (error: any) {
